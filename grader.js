@@ -19,13 +19,18 @@ References:
    - http://en.wikipedia.org/wiki/JSON
    - https://developer.mozilla.org/en-US/docs/JSON
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
+
+  + restler
+  - Module for reading files
 */
 
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+var restler = require('restler');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URL_DEFAULT = "http://pacific-beyond-1046.herokuapp.com/index.html";
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -61,12 +66,24 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
+var checkURL = function(URL_DEFAULT) {
+   restler.get(URL_DEFAULT).on('complete', function(result) {
+        if (result instanceof Error) {
+        sys.puts('Error: ' + result.message);
+        this.retry(5000); // try again after 5 sec
+        } else {
+        sys.puts(result);
+         }
+    });
+}
+
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
-        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        //.option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url  <html_file>', 'Path to URL', checkURL(), URL_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+    var checkJson = checkHtmlFile(program.url, program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
